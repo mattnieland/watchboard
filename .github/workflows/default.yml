@@ -6,7 +6,7 @@ on:
 
 env:
   SENTRY_ORG: mattnieland
-  SENTRY_PROJECT: react-starter
+  SENTRY_PROJECT: watch-board
   SENTRY_ENVIRONMENT: prod
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
         run: echo '${{ secrets.DOPPLER_TOKEN }}' | doppler configure set token
 
       - name: Set Doppler Config
-        run: doppler setup --project react-starter --config prod
+        run: doppler setup --project watch-board --config prod
 
       - name: Install Packages
         run: yarn install
@@ -55,7 +55,7 @@ jobs:
       - name: Deploy Firebase Hosting
         uses: w9jds/firebase-action@master
         with:
-          args: deploy --only hosting:react-starter-c4625
+          args: deploy --only hosting:watchboard-c3edf
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           PROJECT_PATH: ./

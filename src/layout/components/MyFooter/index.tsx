@@ -1,9 +1,9 @@
 // Mantine
-import { Footer, Text } from "@mantine/core";
+import { Footer } from "@mantine/core";
 // Icons
 // import { IconHeart } from "@tabler/icons";
 
-import { createStyles, Group } from "@mantine/core";
+import { createStyles } from "@mantine/core";
 // import {
 //   IconBrandTwitter,
 //   IconBrandYoutube,
@@ -73,11 +73,11 @@ const MyFooter: React.FC = () => {
     <>
       <Footer height={40} py={0} px="xs" style={{ display: "flex" }}>
         <div className={classes.inner}>
-          <Group>
+          {/* <Group>
             <Text size={12}>
               © 2022 Ohana Designs
             </Text>
-          </Group>
+          </Group> */}
           {/* <MediaQuery smallerThan={"sm"} styles={{ display: "none" }}>
             <Group className={classes.links}>{items}</Group>
           </MediaQuery> */}

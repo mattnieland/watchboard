@@ -3,28 +3,25 @@ import { Link } from "react-router-dom";
 // Mantine
 import {
   ActionIcon,  
-  Burger,  
   Group,
   Header,
   MediaQuery,
   SimpleGrid,
   useMantineTheme,
 } from "@mantine/core";
-import { openSpotlight } from "@mantine/spotlight";
 // Icons
-import { IconSearch, IconSun, IconMoonStars } from "@tabler/icons";
+import { IconSun, IconMoonStars } from "@tabler/icons";
 // Global - Assets - Images
 import imgBanner from "assets/img/logo-banner.svg";
-import imgWhite from "assets/img/name-white.png";
+import imgBannerDark from "assets/img/logo-banner-dark.svg";
 // Global - Components
 // import { LanguagePicker } from "components";
 // Local - TypeScript Types
 import { IMyHeader } from "./types";
-import { User } from "./components";
+// import { User } from "./components";
 
 const MyHeader: React.FC<IMyHeader> = ({
-  colorScheme,
-  opened,
+  colorScheme,  
   setOpened,
   toggleColorScheme,
 }: IMyHeader) => {
@@ -32,30 +29,15 @@ const MyHeader: React.FC<IMyHeader> = ({
   return (
     <>
       <Header
-        height={75}
+        height={65}
         p="md"
-        style={{
-          backgroundImage:
-            "linear-gradient(238deg, rgb(59 18 141 / 3%) 23%, rgb(1 175 250 / 4%))",
-        }}
-        sx={{  
-          '@media (max-width: 769px)': {
-            height: 70,
-          },
-        }}
+        style={theme.colorScheme === "dark" ? {
+          backgroundImage: "linear-gradient(90deg, rgba(36,70,85,1) 8%, rgba(255,255,255,1) 100%)",
+        } : {backgroundImage: "linear-gradient(90deg, rgba(255,255,255,1) 8%, rgba(36,70,85,1) 100%)"}}
       >
         <SimpleGrid cols={3}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <Group position="left">
-              <MediaQuery largerThan="md" styles={{ display: "none" }}>
-                <Burger
-                  opened={opened}
-                  onClick={() => setOpened((previous) => !previous)}
-                  size="sm"
-                  color={theme.colors.gray[6]}
-                  mr="xl"
-                />
-              </MediaQuery>
               <MediaQuery smallerThan="sm" styles={{ display: "none" }}>
                 <Link
                   to="/"
@@ -66,22 +48,11 @@ const MyHeader: React.FC<IMyHeader> = ({
                       alt="Logo"
                       src={
                         theme.colorScheme === "dark"
-                          ? imgWhite
+                          ? imgBannerDark
                           : imgBanner
                       }
                       style={{ height: 30 }}
                     />
-                    {/* <Badge
-                      sx={{
-                        border: "1px solid #e8e8e8",
-                        fontWeight: 700,
-                        textDecoration: "none",
-                      }}
-                      color="violet"
-                      variant="light"
-                    >
-                      B2B Supply Chain
-                    </Badge> */}
                   </Group>
                 </Link>
               </MediaQuery>
@@ -100,7 +71,7 @@ const MyHeader: React.FC<IMyHeader> = ({
                     alt="Logo"
                     src={
                       theme.colorScheme === "dark"
-                        ? imgWhite
+                        ? imgBannerDark
                         : imgBanner
                     }
                     style={{ height: 35 }}
@@ -122,18 +93,6 @@ const MyHeader: React.FC<IMyHeader> = ({
                   {/* <LanguagePicker /> */}
                 </div>
               </MediaQuery>
-              <MediaQuery largerThan={"sm"} styles={{ display: "none" }}>
-                <ActionIcon
-                  color={theme.colorScheme === "dark" ? "cyan" : "violet"}
-                  variant="outline"
-                  onClick={() => {
-                    openSpotlight();
-                  }}
-                  size={35}
-                >
-                  <IconSearch size={16} />
-                </ActionIcon>
-              </MediaQuery>
               <ActionIcon
                 variant="default"
                 onClick={() => {
@@ -147,7 +106,7 @@ const MyHeader: React.FC<IMyHeader> = ({
                   <IconMoonStars size={16} />
                 )}
               </ActionIcon>
-              <User />
+              {/* <User /> */}
             </Group>
           </div>
         </SimpleGrid>

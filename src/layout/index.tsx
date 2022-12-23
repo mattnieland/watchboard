@@ -10,7 +10,7 @@ import {
   MantineProvider,  
 } from "@mantine/core";
 // Local - Components
-import { MyNavLeft, MyFooter, MyHeader } from "./components";
+import { MyFooter, MyHeader } from "./components";
 
 const Layout: React.FC = () => {
   const [opened, setOpened] = useState(false);
@@ -38,8 +38,7 @@ const Layout: React.FC = () => {
         >
           <AppShell
             navbarOffsetBreakpoint="md"
-            asideOffsetBreakpoint="md"
-            navbar={<MyNavLeft opened={opened} setOpened={setOpened} />}
+            asideOffsetBreakpoint="md"            
             // aside={
             //   <MediaQuery smallerThan="md" styles={{ display: "none" }}>
             //     <Aside
