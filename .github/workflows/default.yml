@@ -1,0 +1,61 @@
+name: default
+on:
+  push:
+    branches:
+      - main
+
+env:
+  SENTRY_ORG: mattnieland
+  SENTRY_PROJECT: react-starter
+  SENTRY_ENVIRONMENT: prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: Declare some variables
+        id: vars
+        shell: bash
+        run: |            
+              echo "::set-output name=sha::${GITHUB_SHA}"  
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ env.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+        with:
+          environment: ${{ env.SENTRY_ENVIRONMENT }}
+          version: ${{ steps.vars.outputs.sha }}
+          ignore_empty: true
+          ignore_missing: true
+
+      - name: Install curl & GnuPG
+        run: sudo apt-get update && sudo apt-get install -y curl gnupg
+
+      - name: Install Doppler
+        run: (curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh || wget -t 3 -qO- https://cli.doppler.com/install.sh) | sudo sh      
+
+      - name: Set Doppler Token
+        run: echo '${{ secrets.DOPPLER_TOKEN }}' | doppler configure set token
+
+      - name: Set Doppler Config
+        run: doppler setup --project react-starter --config prod
+
+      - name: Install Packages
+        run: yarn install
+
+      - name: Build
+        run: yarn build
+
+      - name: Deploy Firebase Hosting
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only hosting:react-starter-c4625
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_PATH: ./
