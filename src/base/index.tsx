@@ -66,12 +66,12 @@ const AppBase: React.FC = () => {
         locale={language}
         defaultLocale="en"
       > */}
-        {/* <Auth0Provider {...providerConfig}> */}
-          <AppContext.Provider value={contextValue}>
-            <NavigationProgress />
-            <AppRoutes />
-          </AppContext.Provider>
-        {/* </Auth0Provider> */}
+      {/* <Auth0Provider {...providerConfig}> */}
+      <AppContext.Provider value={contextValue}>
+        <NavigationProgress />
+        <AppRoutes />
+      </AppContext.Provider>
+      {/* </Auth0Provider> */}
       {/* </IntlProvider> */}
     </>
   );
