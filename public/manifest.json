@@ -1,5 +1,11 @@
 {
  "name": "WatchBoard",
+  "short_name": "WatchBoard",
+  "theme_color": "#2c325c",
+  "background_color": "#2c325c",
+  "display": "fullscreen",
+  "scope": "/",
+  "start_url": "/",
  "icons": [
   {
    "src": "\/android-icon-36x36.png",
