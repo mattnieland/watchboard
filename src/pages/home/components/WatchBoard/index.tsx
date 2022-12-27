@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Avatar,
   Box,
@@ -9,11 +8,12 @@ import {
   Stack,
   Group,
   SegmentedControl,
-  Title,
   Text,
   Flex,
   LoadingOverlay,
   UnstyledButton,
+  Container,
+  Kbd,
 } from "@mantine/core";
 import {
   FaFootballBall,
@@ -25,7 +25,91 @@ import {
 } from "react-icons/fa";
 import { MeiliSearch } from "meilisearch";
 import { useEffect, useState } from "react";
+import { useHotkeys } from "@mantine/hooks";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+
+const leagues = [
+  {
+    value: "nfl",
+    label: (
+      <Center>
+        <FaFootballBall size={16} />
+        <Box ml={10}>
+          NFL<Kbd ml={5}>N</Kbd>
+        </Box>
+      </Center>
+    ),
+  },
+  {
+    value: "nba",
+    label: (
+      <Center>
+        <FaBasketballBall size={16} />
+        <Box ml={10}>
+          NBA<Kbd ml={5}>B</Kbd>
+        </Box>
+      </Center>
+    ),
+  },
+  {
+    value: "mlb",
+    label: (
+      <Center>
+        <FaBaseballBall size={16} />
+        <Box ml={10}>
+          MLB<Kbd ml={5}>M</Kbd>
+        </Box>
+      </Center>
+    ),
+  },
+  {
+    value: "nhl",
+    label: (
+      <Center>
+        <FaHockeyPuck size={16} />
+        <Box ml={10}>
+          NHL<Kbd ml={5}>H</Kbd>
+        </Box>
+      </Center>
+    ),
+  },
+  {
+    value: "close",
+    label: (
+      <Center>
+        <Box>
+          Close<Kbd ml={5}>Esc</Kbd>
+        </Box>
+      </Center>
+    ),
+  },
+];
+
+const secondaryFilters = [
+  {
+    value: "teams",
+    label: (
+      <Center>
+        <FaUsers size={16} />
+        <Box ml={10}>
+          Teams<Kbd ml={5}>T</Kbd>
+        </Box>
+      </Center>
+    ),
+  },
+  {
+    value: "players",
+    label: (
+      <Center>
+        <FaUser size={16} />
+        <Box ml={10}>
+          Players<Kbd ml={5}>P</Kbd>
+        </Box>
+      </Center>
+    ),
+  },
+];
+
 // import { collection, getDocs } from "firebase/firestore";
 // import { db } from "../../../../firebase";
 
@@ -42,15 +126,22 @@ const WatchBoard: React.FC = () => {
   });
 
   const [watchItems, setWatchItems] = useState([] as any);
-  const [allTeams, setAllTeams] = useState([] as any);
   const [teams, setTeams] = useState([] as any);
   const [players, setPlayers] = useState([] as any);
-  const [divisions, setDivisions] = useState([] as any);
-  const [playerTeams, setPlayerTeams] = useState([] as any);
   const [windowSize, setWindowSize] = useState(getWindowSize());
 
+  useHotkeys([
+    ["n", () => getLeague("nfl")],
+    ["b", () => getLeague("nba")],
+    ["m", () => getLeague("mlb")],
+    ["h", () => getLeague("nhl")],
+    ["t", () => switchTeamPlayers("teams")],
+    ["p", () => switchTeamPlayers("players")],
+    ["escape", () => getLeague("close")],
+  ]);
+
   useEffect(() => {
-    getAllTeams();
+    getTeams();
 
     function handleWindowResize() {
       setWindowSize(getWindowSize());
@@ -68,8 +159,9 @@ const WatchBoard: React.FC = () => {
     return { innerWidth, innerHeight };
   }
 
-  const getAllTeams = async () => {
+  const getTeams = async () => {
     setLoading(true);
+    setTeams([]);
 
     let filters = [];
     filters.push("type = team");
@@ -81,32 +173,14 @@ const WatchBoard: React.FC = () => {
         limit: 1000000,
       })
       .then((response) => {
-        let uniqueDivisions = [] as any;
-        let uniqueLeagues = [
-          ...new Set(response.hits.map((item) => item.league)),
-        ].sort();
-        uniqueLeagues.forEach((element) => {
-          let uniqueLeagueDivisions = [
-            ...new Set(
-              response.hits
-                .filter((item) => item.league === element)
-                .map((item) => item.division)
-            ),
-          ].sort();
-          uniqueLeagueDivisions.forEach((division) => {
-            uniqueDivisions.push({ league: element, division: division });
-          });
-        });
-        setDivisions(uniqueDivisions);
-        setAllTeams(response.hits);
+        setTeams(response.hits);
       })
       .finally(() => {
         setLoading(false);
       });
   };
 
-  const getItems = async (filter1: string, filter2: string) => {
-    setLoading(true);
+  const getPlayers = async (filter1: string, filter2: string) => {
     setExtraFilter("");
 
     if (filter1 === "close" || filter1 === "") {
@@ -115,7 +189,6 @@ const WatchBoard: React.FC = () => {
     } else {
       let filters = [];
       if (filter1) filters.push(`league = ${filter1}`);
-      if (filter2 === "teams") filters.push("type = team");
       if (filter2 === "players") filters.push("type = player");
 
       await searchClient
@@ -125,22 +198,28 @@ const WatchBoard: React.FC = () => {
           limit: 1000000,
         })
         .then((response) => {
-          if (filter2 === "teams") {
-            setTeams(response.hits);
-          } else {
-            setPlayerTeams(
-              [
-                ...new Set(response.hits.map((item) => item.teamShortName)),
-              ].sort()
-            );
-            setPlayers(response.hits);
-          }
-        })
-        .finally(() => {
-          setFilterCollapsed(false);
-          setLoading(false);
+          setPlayers(response.hits);
         });
     }
+  };
+
+  const getLeague = (league: string) => {
+    setLoading(true);
+    setFilter(league);
+    setExtraFilter("");
+    if (league !== "close") {
+      setFilterCollapsed(false);
+    } else {
+      setFilterCollapsed(true);
+    }
+    setLoading(false);
+  };
+
+  const switchTeamPlayers = (filter: string) => {
+    if (filter === "players") {
+      getPlayers(filter, filter);
+    }
+    setSecondaryFilter(filter);
   };
 
   return (
@@ -155,372 +234,282 @@ const WatchBoard: React.FC = () => {
     >
       <Grid>
         <Grid.Col md={12}>
-          <Center>
-            <Stack>
-              <Center>
-                <Group>
-                  <SegmentedControl
-                    value={filter}
-                    color="blue"
-                    onChange={(value) => {
-                      getItems(value, secondaryFilter);
-                      setFilter(value);
-                    }}
-                    data={[
-                      {
-                        value: "nfl",
-                        label: (
-                          <Center>
-                            <FaFootballBall size={16} />
-                            <Box ml={10}>NFL</Box>
-                          </Center>
-                        ),
-                      },
-                      {
-                        value: "nba",
-                        label: (
-                          <Center>
-                            <FaBasketballBall size={16} />
-                            <Box ml={10}>NBA</Box>
-                          </Center>
-                        ),
-                      },
-                      {
-                        value: "mlb",
-                        label: (
-                          <Center>
-                            <FaBaseballBall size={16} />
-                            <Box ml={10}>MLB</Box>
-                          </Center>
-                        ),
-                      },
-                      {
-                        value: "nhl",
-                        label: (
-                          <Center>
-                            <FaHockeyPuck size={16} />
-                            <Box ml={10}>NHL</Box>
-                          </Center>
-                        ),
-                      },
-                      {
-                        value: "close",
-                        label: (
-                          <Center>
-                            <Box>Close</Box>
-                          </Center>
-                        ),
-                      },
-                    ]}
-                  />
-                </Group>
-              </Center>
-              <Collapse in={!filterCollapsed} transitionDuration={500}>
-                {loading ? (
-                  <LoadingOverlay visible={loading} />
-                ) : (
-                  <Box
-                    sx={(theme) => ({
+          <Stack>
+            <Center>
+              <SegmentedControl
+                value={filter}
+                color="blue"
+                radius="lg"
+                styles={(theme) => ({
+                  root: {
+                    backgroundColor:
+                      theme.colorScheme === "dark" ? "#373c46" : "#dfdfdf",
+                  },
+                })}
+                fullWidth
+                onChange={(value) => {
+                  getLeague(value);
+                }}
+                data={leagues}
+              />
+            </Center>
+            <Collapse in={!filterCollapsed} transitionDuration={250}>
+              {loading ? (
+                <LoadingOverlay visible={loading} />
+              ) : (
+                <Container
+                  fluid
+                  sx={(theme) => ({
+                    backgroundColor:
+                      theme.colorScheme === "dark"
+                        ? theme.colors.dark[6]
+                        : theme.colors.gray[0],
+                    textAlign: "center",
+                    padding: theme.spacing.xl,
+                    borderRadius: theme.radius.lg,
+                    "&:hover": {
                       backgroundColor:
                         theme.colorScheme === "dark"
-                          ? theme.colors.dark[6]
-                          : theme.colors.gray[0],
-                      textAlign: "center",
-                      padding: theme.spacing.xl,
-                      width: "1500px",
-                      borderRadius: theme.radius.lg,
-
-                      "&:hover": {
-                        backgroundColor:
-                          theme.colorScheme === "dark"
-                            ? theme.colors.dark[5]
-                            : theme.colors.gray[1],
-                      },
-                    })}
-                  >
-                    <Grid>
-                      <Grid.Col md={12}>
-                        <Center>
-                          <Stack>
-                            <Box>
+                          ? theme.colors.dark[5]
+                          : theme.colors.gray[1],
+                    },
+                  })}
+                >
+                  <Grid>
+                    <Grid.Col md={12}>
+                      <Center>
+                        <Stack>
+                          <Container>
+                            <Center>
+                              <SegmentedControl
+                                value={secondaryFilter}
+                                color="blue"
+                                radius="lg"
+                                fullWidth
+                                styles={(theme) => ({
+                                  root: {
+                                    backgroundColor:
+                                      theme.colorScheme === "dark"
+                                        ? "#373c46"
+                                        : "#dfdfdf",
+                                  },
+                                })}
+                                defaultValue="teams"
+                                onClick={() => {
+                                  setExtraFilter("");
+                                }}
+                                onChange={(value) => {
+                                  switchTeamPlayers(value);
+                                }}
+                                data={secondaryFilters}
+                              />
+                            </Center>
+                          </Container>
+                          <Container>
+                            {secondaryFilter === "teams" ? (
                               <Center>
-                                <SegmentedControl
-                                  value={secondaryFilter}
-                                  color="blue"
-                                  defaultValue="teams"
-                                  onClick={() => {
-                                    setExtraFilter("");
-                                  }}
-                                  onChange={(value) => {
-                                    getItems(filter, value);
-                                    setSecondaryFilter(value);
-                                  }}
-                                  data={[
-                                    {
-                                      value: "teams",
-                                      label: (
-                                        <Center>
-                                          <FaUsers size={16} />
-                                          <Box ml={10}>Teams</Box>
-                                        </Center>
-                                      ),
-                                    },
-                                    {
-                                      value: "players",
-                                      label: (
-                                        <Center>
-                                          <FaUser size={16} />
-                                          <Box ml={10}>Players</Box>
-                                        </Center>
-                                      ),
-                                    },
-                                  ]}
-                                />
-                              </Center>
-                            </Box>
-                            <Grid>
-                              {secondaryFilter === "teams" ? (
-                                divisions.filter(
-                                  (div: any) => div.league === filter
-                                ).length > 0 &&
-                                divisions
-                                  .filter((div: any) => div.league === filter)
-                                  .map((division: any) => (
-                                    <Grid.Col span={filter !== "mlb" ? 6 : 4}>
-                                      <Title>{division.division}</Title>
-                                      <Center>
-                                        {teams
-                                          .filter(
-                                            (team: any) =>
-                                              team.division ===
-                                                division.division &&
-                                              !watchItems.includes(team.id)
-                                          )
-                                          .map((team: any, index: number) => (
-                                            <Droppable
+                                <Group>
+                                  {teams
+                                    .filter(
+                                      (team: any) =>
+                                        team.league === filter &&
+                                        !watchItems.includes(team.id)
+                                    )
+                                    .map((team: any, index: number) => (
+                                      <Droppable
+                                        key={team.id}
+                                        droppableId={team.id}
+                                      >
+                                        {(provided) => (
+                                          <div
+                                            ref={provided.innerRef}
+                                            {...provided.droppableProps}
+                                          >
+                                            <Draggable
                                               key={team.id}
-                                              droppableId={team.id}
+                                              draggableId={team.id}
+                                              index={index}
                                             >
-                                              {(provided, snapshot) => (
+                                              {(provided) => (
                                                 <div
                                                   ref={provided.innerRef}
-                                                  {...provided.droppableProps}
+                                                  {...provided.draggableProps}
+                                                  {...provided.dragHandleProps}
                                                 >
-                                                  <Draggable
-                                                    key={team.id}
-                                                    draggableId={team.id}
-                                                    index={index}
+                                                  <Flex
+                                                    direction="column"
+                                                    align="center"
                                                   >
-                                                    {(provided) => (
-                                                      <div
-                                                        ref={provided.innerRef}
-                                                        {...provided.draggableProps}
-                                                        {...provided.dragHandleProps}
-                                                      >
-                                                        <Flex
-                                                          direction="column"
-                                                          align="center"
-                                                        >
-                                                          <Avatar
-                                                            key={team.id}
-                                                            src={
-                                                              team && team.image
-                                                                ? team.image
-                                                                : "avatar.png"
-                                                            }
-                                                            alt={team.title}
-                                                            size="xl"
-                                                            radius={50}
-                                                          />
-                                                          <Text>
-                                                            {team.shortName}
-                                                          </Text>
-                                                        </Flex>
-                                                      </div>
-                                                    )}
-                                                  </Draggable>
+                                                    <Avatar
+                                                      key={team.id}
+                                                      src={
+                                                        team && team.image
+                                                          ? team.image
+                                                          : "avatar.png"
+                                                      }
+                                                      alt={team.title}
+                                                      size="xl"
+                                                      radius={50}
+                                                    />
+                                                    <Text>
+                                                      {team.shortName}
+                                                    </Text>
+                                                  </Flex>
                                                 </div>
                                               )}
-                                            </Droppable>
-                                          ))}
-                                      </Center>
-                                    </Grid.Col>
-                                  ))
-                              ) : (
-                                <Grid.Col span={12}>
-                                  <Grid>
-                                    {!extraFilter &&
-                                      divisions.filter(
-                                        (div: any) => div.league === filter
-                                      ).length > 0 &&
-                                      divisions
-                                        .filter(
-                                          (div: any) => div.league === filter
-                                        )
-                                        .map((division: any) => (
-                                          <Grid.Col
-                                            span={filter !== "mlb" ? 6 : 4}
+                                            </Draggable>
+                                          </div>
+                                        )}
+                                      </Droppable>
+                                    ))}
+                                </Group>
+                              </Center>
+                            ) : (
+                              <Center>
+                                <Group>
+                                  {!extraFilter &&
+                                    teams
+                                      .filter(
+                                        (team: any) =>
+                                          team.league === filter &&
+                                          !watchItems.includes(team.id)
+                                      )
+                                      .map((team: any) => (
+                                        <UnstyledButton
+                                          onClick={() => {
+                                            if (secondaryFilter === "players") {
+                                              getPlayers(
+                                                filter,
+                                                secondaryFilter
+                                              );
+                                            }
+                                            setExtraFilter(team.shortName);
+                                          }}
+                                        >
+                                          <Flex
+                                            direction="column"
+                                            align="center"
                                           >
-                                            <Title>{division.division}</Title>
-                                            <Center>
-                                              {teams
-                                                .filter(
-                                                  (team: any) =>
-                                                    team.division ===
-                                                      division.division &&
-                                                    !watchItems.includes(
-                                                      team.id
-                                                    )
-                                                )
-                                                .map(
-                                                  (
-                                                    team: any,
-                                                    index: number
-                                                  ) => (
-                                                    <UnstyledButton
-                                                      onClick={() =>
-                                                        setExtraFilter(
-                                                          team.shortName
-                                                        )
-                                                      }
-                                                    >
-                                                      <Flex
-                                                        direction="column"
-                                                        align="center"
-                                                      >
-                                                        <Avatar
-                                                          key={team.id}
-                                                          src={
-                                                            team && team.image
-                                                              ? team.image
-                                                              : "avatar.png"
-                                                          }
-                                                          alt={team.title}
-                                                          size="xl"
-                                                          radius={50}
-                                                        />
-                                                        <Text>
-                                                          {team.shortName}
-                                                        </Text>
-                                                      </Flex>
-                                                    </UnstyledButton>
-                                                  )
-                                                )}
-                                            </Center>
-                                          </Grid.Col>
-                                        ))}
-                                  </Grid>                                  
-                                  <Group>
-                                    {extraFilter &&
-                                      players
-                                        .filter(
-                                          (player: any) =>
-                                            player.teamShortName ===
-                                              extraFilter &&
-                                            !watchItems.includes(player.id)
-                                        )
-                                        .map((player: any, index: number) => (
-                                          <Droppable
-                                            key={player.id}
-                                            droppableId={player.id}
-                                          >
-                                            {(provided, snapshot) => (
-                                              <div
-                                                ref={provided.innerRef}
-                                                {...provided.droppableProps}
+                                            <Avatar
+                                              key={team.id}
+                                              src={
+                                                team && team.image
+                                                  ? team.image
+                                                  : "avatar.png"
+                                              }
+                                              alt={team.title}
+                                              size="xl"
+                                              radius={50}
+                                            />
+                                            <Text>{team.shortName}</Text>
+                                          </Flex>
+                                        </UnstyledButton>
+                                      ))}
+                                  {extraFilter &&
+                                    players
+                                      .filter(
+                                        (player: any) =>
+                                          player.teamShortName ===
+                                            extraFilter &&
+                                          !watchItems.includes(player.id)
+                                      )
+                                      .map((player: any, index: number) => (
+                                        <Droppable
+                                          key={player.id}
+                                          droppableId={player.id}
+                                        >
+                                          {(provided) => (
+                                            <div
+                                              ref={provided.innerRef}
+                                              {...provided.droppableProps}
+                                            >
+                                              <Draggable
+                                                key={player.id}
+                                                draggableId={player.id}
+                                                index={index}
                                               >
-                                                <Draggable
-                                                  key={player.id}
-                                                  draggableId={player.id}
-                                                  index={index}
-                                                >
-                                                  {(provided) => (
-                                                    <div
-                                                      ref={provided.innerRef}
-                                                      {...provided.draggableProps}
-                                                      {...provided.dragHandleProps}
+                                                {(provided) => (
+                                                  <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.draggableProps}
+                                                    {...provided.dragHandleProps}
+                                                  >
+                                                    <Flex
+                                                      direction="column"
+                                                      align="center"
                                                     >
-                                                      <Flex
-                                                        direction="column"
-                                                        align="center"
-                                                      >
-                                                        <Avatar
-                                                          key={player.id}
-                                                          src={
-                                                            player &&
-                                                            player.image
-                                                              ? player.image
-                                                              : "avatar.png"
-                                                          }
-                                                          size="xl"
-                                                          radius={50}
-                                                        />
-                                                        <Text>
-                                                          {player.shortName}
-                                                        </Text>
-                                                      </Flex>
-                                                    </div>
-                                                  )}
-                                                </Draggable>
-                                              </div>
-                                            )}
-                                          </Droppable>
-                                        ))}
-                                  </Group>
-                                </Grid.Col>
-                              )}
-                            </Grid>
-                          </Stack>
-                        </Center>
-                      </Grid.Col>
-                    </Grid>
-                  </Box>
-                )}
-              </Collapse>
-            </Stack>
-          </Center>
+                                                      <Avatar
+                                                        key={player.id}
+                                                        src={
+                                                          player && player.image
+                                                            ? player.image
+                                                            : "avatar.png"
+                                                        }
+                                                        size="xl"
+                                                        radius={50}
+                                                      />
+                                                      <Text>
+                                                        {player.shortName}
+                                                      </Text>
+                                                    </Flex>
+                                                  </div>
+                                                )}
+                                              </Draggable>
+                                            </div>
+                                          )}
+                                        </Droppable>
+                                      ))}
+                                </Group>
+                              </Center>
+                            )}
+                          </Container>
+                        </Stack>
+                      </Center>
+                    </Grid.Col>
+                  </Grid>
+                </Container>
+              )}
+            </Collapse>
+          </Stack>
         </Grid.Col>
         <Grid.Col md={12}>
-          <Center>
-            <Droppable key="drop-zone" droppableId="watch-board">
-              {(provided, snapshot) => (
-                <div {...provided.droppableProps} ref={provided.innerRef}>
-                  <Box
-                    sx={(theme) => ({
+          <Droppable key="drop-zone" droppableId="watch-board">
+            {(provided, snapshot) => (
+              <div {...provided.droppableProps} ref={provided.innerRef}>
+                <Container
+                  fluid
+                  sx={(theme) => ({
+                    backgroundColor:
+                      theme.colorScheme === "dark"
+                        ? theme.colors.dark[6]
+                        : theme.colors.gray[0],
+                    padding: theme.spacing.xl,
+                    borderRadius: theme.radius.lg,
+                    height: windowSize.innerHeight * 0.8,
+                    cursor: "pointer",
+                    "&:hover": {
                       backgroundColor:
                         theme.colorScheme === "dark"
-                          ? theme.colors.dark[6]
-                          : theme.colors.gray[0],
-                      textAlign: "center",
-                      padding: theme.spacing.xl,
-                      width: "1900px",
-                      height: "720px",
-                      borderRadius: theme.radius.lg,
-
-                      "&:hover": {
-                        backgroundColor:
-                          theme.colorScheme === "dark"
-                            ? theme.colors.dark[5]
-                            : theme.colors.gray[1],
-                      },
-                    })}
-                  >
-                    <Center>
-                      {watchItems.length === 0 ? (
-                        <Text>
-                          Drag and drop players or teams here to watch them
-                        </Text>
-                      ) : (
-                        watchItems.map((item: any, index: number) => (
-                          <p>{item}</p>
-                        ))
-                      )}
-                    </Center>
-                  </Box>
-                </div>
-              )}
-            </Droppable>
-          </Center>
+                          ? theme.colors.dark[5]
+                          : theme.colors.gray[1],
+                    },
+                  })}
+                >
+                  <Center>
+                    {watchItems.length === 0 ? (
+                      <Text>
+                        Drag and drop players or teams here to watch them
+                      </Text>
+                    ) : (
+                      watchItems.map((item: any, index: number) => (
+                        <p>{item}</p>
+                      ))
+                    )}
+                  </Center>
+                </Container>
+              </div>
+            )}
+          </Droppable>
         </Grid.Col>
       </Grid>
     </DragDropContext>

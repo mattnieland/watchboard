@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 // Mantine
 import {
-  ActionIcon,  
+  ActionIcon,
   Group,
   Header,
   MediaQuery,
@@ -21,7 +21,7 @@ import { IMyHeader } from "./types";
 // import { User } from "./components";
 
 const MyHeader: React.FC<IMyHeader> = ({
-  colorScheme,  
+  colorScheme,
   setOpened,
   toggleColorScheme,
 }: IMyHeader) => {
@@ -31,55 +31,38 @@ const MyHeader: React.FC<IMyHeader> = ({
       <Header
         height={65}
         p="md"
-        style={theme.colorScheme === "dark" ? {
-          backgroundImage: "linear-gradient(90deg, rgba(36,70,85,1) 8%, rgba(255,255,255,1) 100%)",
-        } : {backgroundImage: "linear-gradient(90deg, rgba(255,255,255,1) 8%, rgba(36,70,85,1) 100%)"}}
+        style={
+          theme.colorScheme === "dark"
+            ? {
+                backgroundImage:
+                  "linear-gradient(90deg, rgba(36,70,85,1) 8%, rgba(255,255,255,1) 100%)",
+              }
+            : {
+                backgroundImage:
+                  "linear-gradient(90deg, rgba(255,255,255,1) 8%, rgba(36,70,85,1) 100%)",
+              }
+        }
       >
         <SimpleGrid cols={3}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <Group position="left">
-              <MediaQuery smallerThan="sm" styles={{ display: "none" }}>
-                <Link
-                  to="/"
-                  style={{ cursor: "pointer", textDecoration: "none" }}
-                >
-                  <Group position="apart">
-                    <img
-                      alt="Logo"
-                      src={
-                        theme.colorScheme === "dark"
-                          ? imgBannerDark
-                          : imgBanner
-                      }
-                      style={{ height: 30 }}
-                    />
-                  </Group>
-                </Link>
-              </MediaQuery>
-            </Group>
-          </div>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <MediaQuery largerThan="sm" styles={{ display: "none" }}>
-              <Group position="apart">
-                <Link
-                  to="/"
-                  onClick={() => {
-                    setOpened(false);
-                  }}
-                >
+              <Link
+                to="/"
+                style={{ cursor: "pointer", textDecoration: "none" }}
+              >
+                <Group position="apart">
                   <img
                     alt="Logo"
                     src={
-                      theme.colorScheme === "dark"
-                        ? imgBannerDark
-                        : imgBanner
+                      theme.colorScheme === "dark" ? imgBannerDark : imgBanner
                     }
-                    style={{ height: 35 }}
+                    style={{ height: 30 }}
                   />
-                </Link>
-              </Group>
-            </MediaQuery>
+                </Group>
+              </Link>
+            </Group>
           </div>
+          <div style={{ display: "flex", alignItems: "center" }}></div>
           <div
             style={{
               display: "flex",
@@ -89,9 +72,7 @@ const MyHeader: React.FC<IMyHeader> = ({
           >
             <Group position="right">
               <MediaQuery smallerThan={"md"} styles={{ display: "none" }}>
-                <div>
-                  {/* <LanguagePicker /> */}
-                </div>
+                <div>{/* <LanguagePicker /> */}</div>
               </MediaQuery>
               <ActionIcon
                 variant="default"
@@ -106,7 +87,6 @@ const MyHeader: React.FC<IMyHeader> = ({
                   <IconMoonStars size={16} />
                 )}
               </ActionIcon>
-              {/* <User /> */}
             </Group>
           </div>
         </SimpleGrid>
